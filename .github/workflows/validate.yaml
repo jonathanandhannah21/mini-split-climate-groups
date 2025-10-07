@@ -1,0 +1,23 @@
+name: Validate
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          pip install flake8 black
+      - name: Lint Python
+        run: |
+          flake8 custom_components/mini_split_climate_groups --count --show-source --statistics
+      - name: Check formatting
+        run: |
+          black --check custom_components/mini_split_climate_groups

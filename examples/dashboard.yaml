@@ -1,0 +1,12 @@
+# Example Dashboard Configuration
+
+type: custom:mini-split-climate-card
+entity: climate.living_area_group
+
+# Add multiple groups:
+type: vertical-stack
+cards:
+  - type: custom:mini-split-climate-card
+    entity: climate.living_area_group
+  - type: custom:mini-split-climate-card
+    entity: climate.kids_area_group

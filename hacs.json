@@ -1,0 +1,5 @@
+{
+  "name": "Mini Split Climate Groups",
+  "render_readme": true,
+  "domains": ["climate"]
+}
