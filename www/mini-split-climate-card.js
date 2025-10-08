@@ -103,7 +103,7 @@ class MiniSplitClimateCard extends LitElement {
               <div class="settings-grid">
                 <div class="setting-item">
                   <label class="setting-label">
-                    Tolerance: ${group.tolerance}�F
+                    Tolerance: ${group.tolerance}°F
                   </label>
                   <input 
                     type="range" 
@@ -172,12 +172,12 @@ class MiniSplitClimateCard extends LitElement {
             <div class="temp-display">
               <div class="temp-item">
                 <div class="temp-label">Current</div>
-                <div class="temp-value current">${member.current_temp.toFixed(1)}�</div>
+                <div class="temp-value current">${member.current_temp.toFixed(1)}°</div>
               </div>
               <ha-icon icon="mdi:chevron-right" class="temp-arrow"></ha-icon>
               <div class="temp-item">
                 <div class="temp-label">Target</div>
-                <div class="temp-value target ${member.mode}">${member.target_temp}�</div>
+                <div class="temp-value target ${member.mode}">${member.target_temp}°</div>
               </div>
             </div>
 
@@ -206,7 +206,7 @@ class MiniSplitClimateCard extends LitElement {
                       <ha-icon icon="mdi:chevron-down"></ha-icon>
                     </button>
                     <div class="target-display ${member.mode}">
-                      ${member.target_temp}�
+                      ${member.target_temp}°
                     </div>
                     <button 
                       class="temp-button"
@@ -221,7 +221,7 @@ class MiniSplitClimateCard extends LitElement {
                 <div class="current-temp-section">
                   <div class="control-label">Current</div>
                   <div class="current-temp-value">
-                    ${member.current_temp.toFixed(1)}�
+                    ${member.current_temp.toFixed(1)}°
                   </div>
                 </div>
               </div>
