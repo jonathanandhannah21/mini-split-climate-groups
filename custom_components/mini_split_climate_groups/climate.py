@@ -42,6 +42,11 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Mini Split Climate Groups from a config entry."""
+    # Ensure coordinator exists
+    if DOMAIN not in hass.data or config_entry.entry_id not in hass.data[DOMAIN]:
+        _LOGGER.error("Coordinator not found for entry %s", config_entry.entry_id)
+        return
+    
     coordinator = hass.data[DOMAIN][config_entry.entry_id]["coordinator"]
     
     async_add_entities(

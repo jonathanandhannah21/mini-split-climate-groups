@@ -6,7 +6,6 @@ from typing import Any, Dict
 
 import voluptuous as vol
 
-from homeassistant.components.climate import DOMAIN as CLIMATE_DOMAIN
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
@@ -37,7 +36,7 @@ from .const import (
 )
 from .coordinator import PriorityClimateCoordinator, PriorityClimateMember
 
-PLATFORMS = [Platform.CLIMATE]
+PLATFORMS = ["climate"]
 
 _LOGGER = logging.getLogger(__name__)
 
