@@ -1,0 +1,13 @@
+{
+  "domain": "mini_split_climate_groups",
+  "name": "Mini Split Climate Groups",
+  "version": "1.0.0",
+  "documentation": "https://github.com/yourusername/mini-split-climate-groups",
+  "issue_tracker": "https://github.com/yourusername/mini-split-climate-groups/issues",
+  "requirements": [],
+  "codeowners": ["@yourusername"],
+  "config_flow": true,
+  "dependencies": ["climate"],
+  "iot_class": "local_polling",
+  "integration_type": "hub"
+}

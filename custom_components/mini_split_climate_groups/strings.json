@@ -1,0 +1,67 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Create Climate Group",
+        "description": "Set up a new mini split climate group with priority-based control",
+        "data": {
+          "name": "Group Name",
+          "tolerance": "Tolerance (degrees outside target before mode change)",
+          "hysteresis": "Hysteresis (deadband for on/off cycling)"
+        }
+      },
+      "add_member": {
+        "title": "Add Climate Zone",
+        "description": "{description}",
+        "data": {
+          "climate_entity": "Climate Entity",
+          "temp_sensor": "Temperature Sensor",
+          "target_temp": "Default Target Temperature",
+          "add_another": "Add Another Zone?"
+        }
+      },
+      "priority": {
+        "title": "Priority Order",
+        "description": "Members will be prioritized in the order they were added:\n\n{members}\n\nPriority #1 has highest precedence. When multiple zones want different modes, the highest priority zone wins. You can change this order later using the set_priority_order service."
+      }
+    },
+    "error": {
+      "unknown": "Unexpected error occurred.",
+      "entity_not_found": "Entity not found. Please check that the selected entities exist.",
+      "invalid_temperature": "Invalid temperature value."
+    },
+    "abort": {
+      "already_configured": "Climate group is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Configure Climate Group",
+        "description": "Adjust tolerance and hysteresis settings for the climate group",
+        "data": {
+          "tolerance": "Tolerance (degrees outside target before mode change)",
+          "hysteresis": "Hysteresis (deadband for on/off cycling)"
+        }
+      }
+    }
+  },
+  "services": {
+    "set_target_temperature": {
+      "name": "Set Target Temperature",
+      "description": "Set target temperature for a specific member in the climate group."
+    },
+    "set_tolerance": {
+      "name": "Set Tolerance", 
+      "description": "Set the tolerance for the climate group (degrees outside target before requesting mode change)."
+    },
+    "set_priority_order": {
+      "name": "Set Priority Order",
+      "description": "Set the priority order for members in the climate group."
+    },
+    "reset_to_default": {
+      "name": "Reset to Default",
+      "description": "Reset a member's target temperature to its default value."
+    }
+  }
+}
