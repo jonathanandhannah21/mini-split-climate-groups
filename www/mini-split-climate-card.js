@@ -353,20 +353,15 @@ class MiniSplitClimateCard extends LitElement {
 
   static styles = css`
     .card-container {
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 16px;
-      background: var(--primary-background-color);
-      border-radius: 8px;
+      background: var(--card-background-color);
+      border-radius: var(--ha-card-border-radius, 12px);
+      overflow: hidden;
     }
 
     .group-container {
-      background: var(--card-background-color);
-      border-radius: 12px;
-      box-shadow: var(--ha-card-box-shadow);
+      position: relative;
       border-left: 4px solid;
       overflow: hidden;
-      margin-bottom: 16px;
     }
 
     .group-container.border-cool {
@@ -380,7 +375,7 @@ class MiniSplitClimateCard extends LitElement {
     .group-header {
       background: linear-gradient(to right, var(--secondary-background-color), var(--card-background-color));
       padding: 16px;
-      border-bottom: 2px solid var(--divider-color);
+      border-bottom: 1px solid var(--divider-color);
     }
 
     .header-content {
