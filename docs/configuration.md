@@ -6,7 +6,20 @@
 2. Click "Add Integration"
 3. Search for "Mini Split Climate Groups"
 4. Follow the configuration wizard: name the group, then add each room (its
-   mini split climate entity, a temperature sensor, and a default target)
+   mini split climate entity, a default target, and optionally a separate
+   temperature sensor)
+
+### Room temperature source
+
+By default, each room's decisions use the unit's own temperature reading
+(the climate entity's current temperature). For a room where that reading is
+misleading (for example a unit mounted high on a wall), pick a separate
+temperature sensor and decisions for that room use the sensor instead.
+
+You can set or clear a room's sensor later: Settings → Devices & Services →
+Mini Split Climate Groups → Configure → **Room temperature source**. The group
+reloads with the new source. Each room's `temp_source` (`unit` or `sensor`)
+is shown in the group's `members` attribute.
 
 Each group creates two entities:
 

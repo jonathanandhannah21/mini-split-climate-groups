@@ -27,12 +27,23 @@ class FakeUnits:
         self.hass = hass
         self.calls: list[tuple[str, dict[str, Any]]] = []
 
-    def add(self, entity_id: str, state: str = "off", temp: float = 72) -> None:
-        self.hass.states.async_set(
-            entity_id,
-            state,
-            {"hvac_modes": ["off", "cool", "heat"], "temperature": temp},
-        )
+    def add(
+        self,
+        entity_id: str,
+        state: str = "off",
+        temp: float = 72,
+        current: float | None = None,
+    ) -> None:
+        attrs = {"hvac_modes": ["off", "cool", "heat"], "temperature": temp}
+        if current is not None:
+            attrs["current_temperature"] = current
+        self.hass.states.async_set(entity_id, state, attrs)
+
+    def unit_reading(self, entity_id: str, current: float) -> None:
+        old = self.hass.states.get(entity_id)
+        attrs = dict(old.attributes)
+        attrs["current_temperature"] = current
+        self.hass.states.async_set(entity_id, old.state, attrs)
 
     def room(self, sensor_id: str, temp: float) -> None:
         self.hass.states.async_set(
@@ -77,9 +88,13 @@ async def units(hass: HomeAssistant) -> FakeUnits:
     return fake
 
 
-def make_entry(**extra: Any) -> MockConfigEntry:
-    """Living Area: living_room (#1, 74°) and bedroom (#2, 72°)."""
-    return MockConfigEntry(
+def make_entry(no_sensor: tuple[str, ...] = (), **extra: Any) -> MockConfigEntry:
+    """Living Area: living_room (#1, 74°) and bedroom (#2, 72°).
+
+    Rooms named in `no_sensor` have no separate sensor and use the unit's
+    own reading.
+    """
+    entry = MockConfigEntry(
         domain=DOMAIN,
         title="Living Area",
         data={
@@ -105,6 +120,10 @@ def make_entry(**extra: Any) -> MockConfigEntry:
             **extra,
         },
     )
+    for member in entry.data["members"]:
+        if member["id"] in no_sensor:
+            member.pop("temp_sensor")
+    return entry
 
 
 async def setup_group(
@@ -117,8 +136,13 @@ async def setup_group(
     entry: MockConfigEntry | None = None,
 ) -> MockConfigEntry:
     """Create room temps and unit states, then set up the group."""
-    units.add("climate.living_room_unit", living_state)
-    units.add("climate.bedroom_unit", bedroom_state)
+    for unit, state in (
+        ("climate.living_room_unit", living_state),
+        ("climate.bedroom_unit", bedroom_state),
+    ):
+        existing = hass.states.get(unit)
+        current = existing.attributes.get("current_temperature") if existing else None
+        units.add(unit, state, current=current)
     units.room("sensor.living_room_temp", living)
     units.room("sensor.bedroom_temp", bedroom)
     entry = entry or make_entry()

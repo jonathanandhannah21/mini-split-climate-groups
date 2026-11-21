@@ -84,7 +84,12 @@ def schedule_is_active(schedule: Dict[str, Any], now: datetime) -> bool:
 
 
 class PriorityClimateMember:
-    """A room in a climate group: one mini split unit and one sensor."""
+    """A room in a climate group: one mini split unit.
+
+    Decisions use the unit's own temperature reading, unless the room has a
+    separate temperature sensor configured (optional), in which case that
+    sensor is used instead.
+    """
 
     def __init__(
         self,
@@ -92,7 +97,7 @@ class PriorityClimateMember:
         member_id: str,
         name: str,
         climate_entity_id: str,
-        temp_sensor_id: str,
+        temp_sensor_id: Optional[str],
         default_target_temp: float,
     ) -> None:
         """Initialize the member."""
@@ -100,7 +105,7 @@ class PriorityClimateMember:
         self.member_id = member_id
         self.name = name
         self.climate_entity_id = climate_entity_id
-        self.temp_sensor_id = temp_sensor_id
+        self.temp_sensor_id = temp_sensor_id or None
         self.default_target_temp = float(default_target_temp)
 
         # Runtime state
@@ -117,9 +122,18 @@ class PriorityClimateMember:
         self.paused = False
         self.status = STATUS_IDLE
         self._warned_missing_modes = False
+        self._warned_no_unit_temp = False
+
+    @property
+    def temp_source(self) -> str:
+        """Where decisions read the room temperature from."""
+        return "sensor" if self.temp_sensor_id else "unit"
 
     def update_current_temp(self) -> bool:
-        """Update current temperature from the room sensor."""
+        """Update the room temperature from its sensor or the unit."""
+        if not self.temp_sensor_id:
+            return self._update_temp_from_unit()
+
         temp_state = self.hass.states.get(self.temp_sensor_id)
 
         if temp_state is None:
@@ -150,6 +164,40 @@ class PriorityClimateMember:
                 temp_state.state,
                 self.temp_sensor_id,
                 err,
+            )
+            return False
+
+    def _update_temp_from_unit(self) -> bool:
+        """Use the unit's own current_temperature reading."""
+        climate_state = self.hass.states.get(self.climate_entity_id)
+        if climate_state is None or climate_state.state in (
+            STATE_UNAVAILABLE,
+            STATE_UNKNOWN,
+        ):
+            return False
+
+        value = climate_state.attributes.get("current_temperature")
+        if value is None:
+            if self._warned_no_unit_temp:
+                return False
+            self._warned_no_unit_temp = True
+            _LOGGER.warning(
+                "[%s] %s reports no current temperature. "
+                "Add a temperature sensor for this room in the group's options.",
+                self.name,
+                self.climate_entity_id,
+            )
+            return False
+        self._warned_no_unit_temp = False
+        try:
+            self.current_temp = float(value)
+            return True
+        except (ValueError, TypeError):
+            _LOGGER.error(
+                "[%s] Invalid current temperature '%s' from %s",
+                self.name,
+                value,
+                self.climate_entity_id,
             )
             return False
 
@@ -333,6 +381,7 @@ class PriorityClimateMember:
             "name": self.name,
             "climate_entity": self.climate_entity_id,
             "temp_sensor": self.temp_sensor_id,
+            "temp_source": self.temp_source,
             "current_temp": (
                 round(self.current_temp, 1) if self.current_temp is not None else None
             ),

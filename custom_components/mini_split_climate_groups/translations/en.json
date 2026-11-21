@@ -14,10 +14,13 @@
         "title": "Add Climate Zone",
         "description": "{description}",
         "data": {
-          "climate_entity": "Climate Entity",
-          "temp_sensor": "Temperature Sensor",
-          "target_temp": "Default Target Temperature",
-          "add_another": "Add Another Zone?"
+          "climate_entity": "Climate entity (the mini split)",
+          "temp_sensor": "Separate temperature sensor (optional)",
+          "target_temp": "Default target temperature",
+          "add_another": "Add another room?"
+        },
+        "data_description": {
+          "temp_sensor": "Leave empty to base this room's decisions on the unit's own temperature reading. Pick a sensor to use it instead, for example when the unit sits high on a wall."
         }
       },
       "priority": {
@@ -37,13 +40,39 @@
   "options": {
     "step": {
       "init": {
-        "title": "Configure Climate Group",
-        "description": "Adjust tolerance and hysteresis settings for the climate group",
+        "title": "Configure climate group",
+        "menu_options": {
+          "comfort": "Tolerance and hysteresis",
+          "room_sensor": "Room temperature source"
+        }
+      },
+      "comfort": {
+        "title": "Tolerance and hysteresis",
         "data": {
-          "tolerance": "Tolerance (degrees outside target before mode change)",
-          "hysteresis": "Hysteresis (deadband for on/off cycling)"
+          "tolerance": "Tolerance (degrees outside target before asking for heat or cool)",
+          "hysteresis": "Hysteresis (buffer before a room counts as back on target)"
+        }
+      },
+      "room_sensor": {
+        "title": "Room temperature source",
+        "description": "Pick a room. By default decisions use the unit's own temperature reading.",
+        "data": {
+          "member": "Room"
+        }
+      },
+      "room_sensor_edit": {
+        "title": "Temperature source for {room}",
+        "description": "Pick a sensor to base {room}'s decisions on it, or clear the field to use the unit's own reading.",
+        "data": {
+          "temp_sensor": "Separate temperature sensor (optional)"
         }
       }
+    },
+    "error": {
+      "entity_not_found": "That sensor was not found."
+    },
+    "abort": {
+      "unknown_member": "That room no longer exists."
     }
   },
   "services": {

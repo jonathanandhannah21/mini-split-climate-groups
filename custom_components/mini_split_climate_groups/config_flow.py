@@ -43,7 +43,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
         if not hass.states.get(data[CONF_CLIMATE_ENTITY]):
             raise ValueError(f"Climate entity {data[CONF_CLIMATE_ENTITY]} not found")
 
-    if CONF_TEMP_SENSOR in data:
+    if data.get(CONF_TEMP_SENSOR):
         if not hass.states.get(data[CONF_TEMP_SENSOR]):
             raise ValueError(f"Temperature sensor {data[CONF_TEMP_SENSOR]} not found")
 
@@ -142,7 +142,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         "id": member_id,
                         CONF_MEMBER_NAME: member_name,
                         CONF_CLIMATE_ENTITY: user_input[CONF_CLIMATE_ENTITY],
-                        CONF_TEMP_SENSOR: user_input[CONF_TEMP_SENSOR],
+                        # Optional: without one, the unit's own reading is used.
+                        CONF_TEMP_SENSOR: user_input.get(CONF_TEMP_SENSOR) or None,
                         CONF_TARGET_TEMP: user_input.get(
                             CONF_TARGET_TEMP, DEFAULT_TARGET_TEMP
                         ),
@@ -177,12 +178,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             domain=CLIMATE_DOMAIN,
                         )
                     ),
-                    vol.Required(CONF_TEMP_SENSOR): selector.EntitySelector(
-                        selector.EntitySelectorConfig(
-                            domain=SENSOR_DOMAIN,
-                            device_class="temperature",
-                        )
-                    ),
+                    vol.Optional(CONF_TEMP_SENSOR): _temp_sensor_selector(),
                     vol.Optional(
                         CONF_TARGET_TEMP, default=DEFAULT_TARGET_TEMP
                     ): selector.NumberSelector(
@@ -241,25 +237,50 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class OptionsFlowHandler(config_entries.OptionsFlow):
-    """Handle options flow for the integration."""
+    """Options: comfort settings and per-room temperature source."""
+
+    def __init__(self) -> None:
+        """Initialize options flow."""
+        self._member_id: str | None = None
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle options flow."""
+        """Choose what to configure."""
+        return self.async_show_menu(
+            step_id="init", menu_options=["comfort", "room_sensor"]
+        )
+
+    async def async_step_comfort(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Tolerance and hysteresis."""
         if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
+            return self.async_create_entry(
+                title="", data={**self.config_entry.options, **user_input}
+            )
 
         entry = self.config_entry
-        current_tolerance = entry.options.get(
-            CONF_TOLERANCE, entry.data.get(CONF_TOLERANCE, DEFAULT_TOLERANCE)
+        coordinator = (
+            self.hass.data.get(DOMAIN, {}).get(entry.entry_id, {}).get("coordinator")
         )
-        current_hysteresis = entry.options.get(
-            CONF_HYSTERESIS, entry.data.get(CONF_HYSTERESIS, DEFAULT_HYSTERESIS)
+        current_tolerance = (
+            coordinator.tolerance
+            if coordinator
+            else entry.options.get(
+                CONF_TOLERANCE, entry.data.get(CONF_TOLERANCE, DEFAULT_TOLERANCE)
+            )
+        )
+        current_hysteresis = (
+            coordinator.hysteresis
+            if coordinator
+            else entry.options.get(
+                CONF_HYSTERESIS, entry.data.get(CONF_HYSTERESIS, DEFAULT_HYSTERESIS)
+            )
         )
 
         return self.async_show_form(
-            step_id="init",
+            step_id="comfort",
             data_schema=vol.Schema(
                 {
                     vol.Optional(
@@ -277,7 +298,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         CONF_HYSTERESIS, default=current_hysteresis
                     ): selector.NumberSelector(
                         selector.NumberSelectorConfig(
-                            min=0.1,
+                            min=0.0,
                             max=1.0,
                             step=0.1,
                             mode=selector.NumberSelectorMode.SLIDER,
@@ -287,3 +308,81 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 }
             ),
         )
+
+    async def async_step_room_sensor(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Pick the room whose temperature source to change."""
+        members = self.config_entry.data.get(CONF_MEMBERS, [])
+        if user_input is not None:
+            self._member_id = user_input["member"]
+            return await self.async_step_room_sensor_edit()
+
+        options = [
+            selector.SelectOptionDict(
+                value=m["id"],
+                label=(
+                    f"{m.get(CONF_MEMBER_NAME, m['id'])} — "
+                    f"{m.get(CONF_TEMP_SENSOR) or 'unit reading'}"
+                ),
+            )
+            for m in members
+        ]
+        return self.async_show_form(
+            step_id="room_sensor",
+            data_schema=vol.Schema(
+                {
+                    vol.Required("member"): selector.SelectSelector(
+                        selector.SelectSelectorConfig(options=options)
+                    )
+                }
+            ),
+        )
+
+    async def async_step_room_sensor_edit(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Set or clear one room's temperature sensor."""
+        entry = self.config_entry
+        members = entry.data.get(CONF_MEMBERS, [])
+        member = next((m for m in members if m["id"] == self._member_id), None)
+        if member is None:
+            return self.async_abort(reason="unknown_member")
+
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            sensor = user_input.get(CONF_TEMP_SENSOR) or None
+            if sensor and not self.hass.states.get(sensor):
+                errors[CONF_TEMP_SENSOR] = "entity_not_found"
+            else:
+                new_members = [
+                    {**m, CONF_TEMP_SENSOR: sensor} if m["id"] == member["id"] else m
+                    for m in members
+                ]
+                # The update listener reloads the group with the new source.
+                self.hass.config_entries.async_update_entry(
+                    entry, data={**entry.data, CONF_MEMBERS: new_members}
+                )
+                return self.async_create_entry(title="", data=dict(entry.options))
+
+        return self.async_show_form(
+            step_id="room_sensor_edit",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(
+                        CONF_TEMP_SENSOR,
+                        description={"suggested_value": member.get(CONF_TEMP_SENSOR)},
+                    ): _temp_sensor_selector(),
+                }
+            ),
+            description_placeholders={
+                "room": member.get(CONF_MEMBER_NAME, member["id"]),
+            },
+            errors=errors,
+        )
+
+
+def _temp_sensor_selector() -> selector.EntitySelector:
+    return selector.EntitySelector(
+        selector.EntitySelectorConfig(domain=SENSOR_DOMAIN, device_class="temperature")
+    )

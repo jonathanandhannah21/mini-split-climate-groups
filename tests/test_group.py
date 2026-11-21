@@ -12,7 +12,16 @@ from custom_components.mini_split_climate_groups.coordinator import (
     schedule_is_active,
 )
 
-from .conftest import DOMAIN, GROUP, SWITCH, call, members, refresh, setup_group
+from .conftest import (
+    DOMAIN,
+    GROUP,
+    SWITCH,
+    call,
+    make_entry,
+    members,
+    refresh,
+    setup_group,
+)
 
 LIVING = "climate.living_room_unit"
 BEDROOM = "climate.bedroom_unit"
@@ -319,3 +328,72 @@ async def test_service_descriptions_match(hass: HomeAssistant, units) -> None:
     for name, service in translated["services"].items():
         fields = set(load_yaml(str(base / "services.yaml"))[name]["fields"])
         assert set(service["fields"]) == fields, name
+
+
+# --- Temperature source ------------------------------------------------------
+
+
+async def test_unit_reading_is_the_default(hass: HomeAssistant, units) -> None:
+    """A room without a separate sensor uses the unit's own reading."""
+    entry = make_entry(no_sensor=("living_room",))
+    units.add(LIVING, current=75.6)
+    entry = await setup_group(hass, units, living=60.0, bedroom=72.0, entry=entry)
+    # The (ignored) living room sensor says 60°, the unit says 75.6°: cool.
+    m = members(hass)
+    assert m["living_room"]["temp_source"] == "unit"
+    assert m["living_room"]["current_temp"] == 75.6
+    assert m["bedroom"]["temp_source"] == "sensor"
+    assert units.mode(LIVING) == "cool"
+
+    units.unit_reading(LIVING, 73.0)
+    await refresh(hass, entry)
+    assert units.mode(LIVING) == "off"
+
+
+async def test_change_room_sensor_in_options(hass: HomeAssistant, units) -> None:
+    """Options can add a sensor to a room, then clear it again."""
+    entry = make_entry(no_sensor=("living_room",))
+    units.add(LIVING, current=74.0)
+    entry = await setup_group(hass, units, living=78.0, bedroom=72.0, entry=entry)
+    assert units.mode(LIVING) == "off"  # unit reads 74°, on target
+
+    async def set_sensor(value: str | None) -> None:
+        flow = await hass.config_entries.options.async_init(entry.entry_id)
+        flow = await hass.config_entries.options.async_configure(
+            flow["flow_id"], {"next_step_id": "room_sensor"}
+        )
+        flow = await hass.config_entries.options.async_configure(
+            flow["flow_id"], {"member": "living_room"}
+        )
+        assert flow["step_id"] == "room_sensor_edit"
+        flow = await hass.config_entries.options.async_configure(
+            flow["flow_id"], {"temp_sensor": value} if value else {}
+        )
+        assert flow["type"] == "create_entry"
+        await hass.async_block_till_done()
+
+    await set_sensor("sensor.living_room_temp")
+    m = members(hass)
+    assert m["living_room"]["temp_source"] == "sensor"
+    assert units.mode(LIVING) == "cool"  # sensor reads 78°
+
+    await set_sensor(None)
+    m = members(hass)
+    assert m["living_room"]["temp_source"] == "unit"
+    assert m["living_room"]["current_temp"] == 74.0
+
+
+async def test_comfort_options_apply(hass: HomeAssistant, units) -> None:
+    """Tolerance from the options dialog reaches the running group."""
+    entry = await setup_group(hass, units, living=74.0, bedroom=72.0)
+    flow = await hass.config_entries.options.async_init(entry.entry_id)
+    flow = await hass.config_entries.options.async_configure(
+        flow["flow_id"], {"next_step_id": "comfort"}
+    )
+    await hass.config_entries.options.async_configure(
+        flow["flow_id"], {"tolerance": 2.5, "hysteresis": 0.2}
+    )
+    await hass.async_block_till_done()
+    attrs = hass.states.get(GROUP).attributes
+    assert attrs["tolerance"] == 2.5
+    assert attrs["hysteresis"] == 0.2

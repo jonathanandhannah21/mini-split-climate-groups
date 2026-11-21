@@ -134,7 +134,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             member_id=member_config["id"],
             name=member_config.get(CONF_MEMBER_NAME, member_config["id"]),
             climate_entity_id=member_config[CONF_CLIMATE_ENTITY],
-            temp_sensor_id=member_config[CONF_TEMP_SENSOR],
+            temp_sensor_id=member_config.get(CONF_TEMP_SENSOR) or None,
             default_target_temp=member_config.get(
                 CONF_TARGET_TEMP, DEFAULT_TARGET_TEMP
             ),
@@ -163,10 +163,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def _async_options_updated(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Apply tolerance/hysteresis changed in the options dialog."""
+    """Apply changes made in the options dialog."""
     coordinator: PriorityClimateCoordinator = hass.data[DOMAIN][entry.entry_id][
         "coordinator"
     ]
+    configured = {
+        m["id"]: m.get(CONF_TEMP_SENSOR) or None
+        for m in entry.data.get(CONF_MEMBERS, [])
+    }
+    running = {m.member_id: m.temp_sensor_id for m in coordinator.members}
+    if configured != running:
+        # A room's temperature source changed: rebuild the group.
+        hass.config_entries.async_schedule_reload(entry.entry_id)
+        return
     if CONF_TOLERANCE in entry.options:
         await coordinator.async_set_tolerance(entry.options[CONF_TOLERANCE])
     if CONF_HYSTERESIS in entry.options:
