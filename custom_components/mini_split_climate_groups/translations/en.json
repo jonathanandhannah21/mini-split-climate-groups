@@ -1,0 +1,185 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Create Climate Group",
+        "description": "Set up a new mini split climate group with priority-based control",
+        "data": {
+          "name": "Group Name",
+          "tolerance": "Tolerance (degrees outside target before mode change)",
+          "hysteresis": "Hysteresis (deadband for on/off cycling)"
+        }
+      },
+      "add_member": {
+        "title": "Add Climate Zone",
+        "description": "{description}",
+        "data": {
+          "climate_entity": "Climate Entity",
+          "temp_sensor": "Temperature Sensor",
+          "target_temp": "Default Target Temperature",
+          "add_another": "Add Another Zone?"
+        }
+      },
+      "priority": {
+        "title": "Priority Order",
+        "description": "Members will be prioritized in the order they were added:\n\n{members}\n\nPriority #1 has highest precedence. You can change the order and add time-based schedules from the card's settings."
+      }
+    },
+    "error": {
+      "unknown": "Unexpected error occurred.",
+      "entity_not_found": "Entity not found. Please check that the selected entities exist.",
+      "invalid_temperature": "Invalid temperature value."
+    },
+    "abort": {
+      "already_configured": "Climate group is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Configure Climate Group",
+        "description": "Adjust tolerance and hysteresis settings for the climate group",
+        "data": {
+          "tolerance": "Tolerance (degrees outside target before mode change)",
+          "hysteresis": "Hysteresis (deadband for on/off cycling)"
+        }
+      }
+    }
+  },
+  "services": {
+    "set_target_temperature": {
+      "name": "Set room target",
+      "description": "Set one room's target temperature. Other rooms keep theirs.",
+      "fields": {
+        "entity_id": {
+          "name": "Group",
+          "description": "The climate group entity."
+        },
+        "member_id": {
+          "name": "Room",
+          "description": "Room (member) id, for example living_room."
+        },
+        "temperature": {
+          "name": "Temperature",
+          "description": "Target in °F."
+        }
+      }
+    },
+    "set_member_power": {
+      "name": "Set room power",
+      "description": "With automation on, off pauses the room and on resumes it. With automation off, turns the unit on (in the group mode) or off.",
+      "fields": {
+        "entity_id": {
+          "name": "Group",
+          "description": "The climate group entity."
+        },
+        "member_id": {
+          "name": "Room",
+          "description": "Room (member) id, for example living_room."
+        },
+        "on": {
+          "name": "On",
+          "description": "Turn the room on (true) or off (false)."
+        }
+      }
+    },
+    "set_automation": {
+      "name": "Set automation",
+      "description": "On: priority decides the mode and turns rooms on and off. Off: you choose mode and power; running units are kept in the group mode.",
+      "fields": {
+        "entity_id": {
+          "name": "Group",
+          "description": "The climate group entity."
+        },
+        "enabled": {
+          "name": "Enabled",
+          "description": "Turn automation on or off."
+        }
+      }
+    },
+    "set_mode": {
+      "name": "Set group mode",
+      "description": "Choose heat or cool by hand. This turns automation off and switches running units to the new mode.",
+      "fields": {
+        "entity_id": {
+          "name": "Group",
+          "description": "The climate group entity."
+        },
+        "mode": {
+          "name": "Mode",
+          "description": "heat or cool."
+        }
+      }
+    },
+    "set_tolerance": {
+      "name": "Set tolerance",
+      "description": "How far a room can drift from its target before it asks for heat or cool.",
+      "fields": {
+        "entity_id": {
+          "name": "Group",
+          "description": "The climate group entity."
+        },
+        "tolerance": {
+          "name": "Tolerance",
+          "description": "Degrees °F."
+        }
+      }
+    },
+    "set_hysteresis": {
+      "name": "Set hysteresis",
+      "description": "Buffer before a room counts as back on target and its unit turns off.",
+      "fields": {
+        "entity_id": {
+          "name": "Group",
+          "description": "The climate group entity."
+        },
+        "hysteresis": {
+          "name": "Hysteresis",
+          "description": "Degrees °F."
+        }
+      }
+    },
+    "set_priority_order": {
+      "name": "Set default priority",
+      "description": "Priority order used when no schedule is active (highest first).",
+      "fields": {
+        "entity_id": {
+          "name": "Group",
+          "description": "The climate group entity."
+        },
+        "priority_order": {
+          "name": "Priority order",
+          "description": "List of room ids, highest priority first."
+        }
+      }
+    },
+    "set_schedules": {
+      "name": "Set schedules",
+      "description": "Replace the group's priority schedules. Each has a name, start and end (HH:MM; an end before the start runs overnight), days, and a priority order.",
+      "fields": {
+        "entity_id": {
+          "name": "Group",
+          "description": "The climate group entity."
+        },
+        "schedules": {
+          "name": "Schedules",
+          "description": "List of schedules."
+        }
+      }
+    },
+    "reset_to_default": {
+      "name": "Reset room target",
+      "description": "Reset a room's target to its configured default.",
+      "fields": {
+        "entity_id": {
+          "name": "Group",
+          "description": "The climate group entity."
+        },
+        "member_id": {
+          "name": "Room",
+          "description": "Room (member) id, for example living_room."
+        }
+      }
+    }
+  }
+}

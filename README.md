@@ -6,12 +6,32 @@ A Home Assistant custom integration for managing multiple mini-split climate zon
 
 ## Features
 
-- 🎯 **Priority-Based Control** - Highest priority zone that needs it determines the group mode
-- 🔄 **Prevents Mode Conflicts** - Never heat and cool simultaneously
-- 🌡️ **Independent Temperatures** - Each zone maintains its own target
-- ⏰ **Time-Based Priorities** - Different priorities for day/night
+- 🎯 **Priority-Based Control** - The highest-priority room outside its tolerance decides the group mode
+- 🔄 **Prevents Mode Conflicts** - One shared heat/cool mode; units never heat and cool at once
+- 🌡️ **Independent Temperatures** - Every room keeps its own target
+- 🤖 **Automation On/Off** - Let priority run the rooms, or take over mode and power yourself
+- ⏰ **Priority Schedules** - A different priority order by time of day and day of week
+- ⏸️ **Pause a Room** - Leave one room off without fighting the automation
+- 🃏 **Dashboard Card** - Fixed-size "priority ladder" card with per-room controls and settings
 - 📊 **Rich Diagnostics** - Detailed logging explains every decision
 - 🛡️ **Robust Error Handling** - Gracefully handles unavailable entities and missing modes
+
+## How It Works
+
+Each group has **one mode** (heat or cool) that every running unit follows, and
+each room has **its own target**.
+
+- **Automation on** (default): rooms are checked in priority order. The
+  highest-priority room that is outside its tolerance decides the mode. Each
+  room's unit runs only while that room needs the group mode, then turns off.
+  A room that wants the other mode waits until it is the highest priority asking.
+- **Automation off**: nothing is switched on or off for you. You choose the
+  mode and turn rooms on and off; the group only keeps running units in the
+  group mode, and each unit's own thermostat holds its room at the room's target.
+
+Choosing heat or cool by hand (on the card or the thermostat) turns automation
+off. Turning the group's climate entity **off** turns automation off and every
+unit off, and they stay off.
 
 ## Installation
 

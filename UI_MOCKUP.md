@@ -1,6 +1,8 @@
 # UI Mockup - React Reference Implementation
 
-This is the reference UI implementation in React. Convert this to Lit Element for the actual card.
+> **Superseded.** The card in `www/mini-split-climate-card.js` now implements the
+> "Priority Ladder" design described in [docs/configuration.md](docs/configuration.md#the-card).
+> This file is kept for history.
 
 ## Key UI Patterns
 
